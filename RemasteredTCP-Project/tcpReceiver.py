@@ -9,29 +9,76 @@ def getUserInput():
     port = int(sys.argv[2])
     return (host,port)
 
-def start_dataSocket(dSock):
-    myPacket = tcpPacket(0) # Placeholder 0 for initialization. Will be replaced 
+def start_dataSocket(dSock,myPacket):
+    outPacket = tcpPacket(0) 
+    dSock.settimeout(1)
     while True:
         try:
-            # Receive data from sender
-            data,addr = dSock.recvfrom(1024)  
-            myPacket.copyHeader(data)
+            outfile = open("result.txt",'a')
+            # Receive data from sender and set header and payload accordingly 
+            data,addr = dSock.recvfrom(1024) 
+            outPacket.copyHeader(data); outPacket.setPayload(outPacket.getHeader()[17:])
 
             # If the received data contains a FIN, send back ACK then close connection
-            if myPacket.getFin() == 1:
-                print("todo!")
+            if outPacket.getFin() == 1:
+                print("Fin received!")
+                myPacket.makeACKpkt(outPacket)
+                dSock.sendto(myPacket,addr)
+                dSock.close()
+                break
 
             # Check how many bits sent at once for BDP
+            pktLen = len(outPacket.getHeader()); payloadLen = len(outPacket.getPayload())
+            cwndSize = outPacket.getCwnd()
+            bitsSent = cwndSize*pktLen
 
-            # Get payload from received packet
+            # Randomly drop or jitter the packet for simulation of connection issues
+            BDP = 20000 # DELETE LATER. SHOULD COME FROM USER INPUT IN FINAL VER.
+            jitter = 90 # SAME AS ABOVE
+            pktLossPercentage = 10 # SAME AS ABOVE
+            randomChance = random.randint(0,100)
+            # Enter congestion state
+            if bitsSent > BDP:
+                if randomChance < (3*pktLossPercentage):
+                    continue
+                elif randomChance > jitter:
+                    time.sleep(3*(randomChance/100))
+            # Normal state
+            elif bitsSent <= BDP:
+                if randomChance < pktLossPercentage:
+                    continue
+                elif randomChance > jitter:
+                    time.sleep(randomChance/100)
+            # time.sleep(randomChance/100)
+            #myPacket.setPayload("hello".encode()); myPacket.addPayload()
 
-            # Adjust sequence/acknowledgement numbers
+            # See if received packet is the correct one. If yes, then valid == true
+            valid = (myPacket.verifySeqAck(outPacket))
 
             # Send ACK back to receiver
-            dSock.sendto("Received!".encode(),addr)
+            if valid:
+                print("valid")
+                print(outPacket.getPayload().decode())
+                outfile.write(outPacket.getPayload().decode())
+                dSock.sendto(myPacket.getHeader(),addr)
+                myPacket.incrementNums(myPacket.getPayload(),outPacket)
+
+            # Repeat until correct packet is received
+            else:
+                print("not valid")
+                
+
 
         except socket.timeout:
-            print("\nError ocurred. 'data' socket disconnected.")
+            print("Timeout ocurred...")
+
+            if outPacket.getFin() == 1:
+                print("Fin received!")
+                myPacket.makeACKpkt(outPacket)
+                dSock.sendto(myPacket,addr)
+                dSock.close()
+                break
+            
 
 def start_welcomeSocket(socketAddress):
     # Parse out address into individual variables
@@ -69,15 +116,15 @@ def start_welcomeSocket(socketAddress):
 
                 # Receive response from sender. (get ACK)
                 data,addr = wSocket.recvfrom(1024)
-                myPacket.copyHeader(data); outPacket.copyHeader(data)
+                outPacket.copyHeader(data)
 
                 # If 3-way successful. Start new thread for data socket for concurrent running sockets
                 if outPacket.getAck() == 1:
-                    dThread = threading.Thread(target=start_dataSocket,args=(dSock,))
+                    dThread = threading.Thread(target=start_dataSocket,args=(dSock,myPacket,))
                     dThread.start()
                 
             except:
-                print("\nError ocurred. 'Welcoming' socket disconnected.")
+                print("Error ocurred. 'Welcoming' socket disconnected.")
                 break
 
 def main():

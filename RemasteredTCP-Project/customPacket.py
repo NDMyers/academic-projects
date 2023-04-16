@@ -23,7 +23,6 @@ class tcpPacket:
         self.fin = 0                                # FIN
         self.cwnd = 1                               # Window size (initial size of 1)
         self.header = None                          # No header yet at initialization
-        self.savedAcknum = None                     # For seq/ack num verification during data transfer
         self.payload = None                         # No initial payload
 
     # Getters
@@ -45,8 +44,6 @@ class tcpPacket:
         return self.cwnd
     def getHeader(self):
         return self.header
-    def getSavedAcknum(self):
-        return self.savedAcknum
     def getPayload(self):
         return self.payload
     
@@ -67,10 +64,8 @@ class tcpPacket:
         self.fin = input
     def setCwnd(self,input):
         self.cwnd = input
-    def setSavedAcknum(self,input):
-        self.savedAcknum = input
     def setPayload(self,input):
-        self.payload = input.encode()
+        self.payload = input
 
     # Make header with current values
     def makeHeader(self):
@@ -96,26 +91,6 @@ class tcpPacket:
         self.setCwnd(int(binascii.hexlify(input[15:17]),16))
 
     # For part 2 of 3-way handshake. Receiver (server) formatting and sending SYN/ACK
-    # def makeSYNACKpkt(self,senderPort,receiverPort):
-    #     if self.getSyn() == 1:
-    #         # Set sport to this senders port
-    #         self.setSport(senderPort)
-    #         # Set dport to the receivers port 
-    #         self.setDport(receiverPort)
-    #         # Set ack == 1 (for SYN/ACK, SYN == 1 and ACK == 1)
-    #         self.setAck(1)
-    #         # 1st. Set acknowledgement number to the seq. num received from packet + 1
-    #         self.setAcknum(self.getSeqnum()+1)        
-    #         # 2nd. Set sequence number to that of a random integer according to RFC protocols
-    #         self.setSeqnum(random.randint(0,4294967295))
-
-    #         # Adjust saved ack num 
-    #         self.setSavedAcknum(self.getAcknum())
-
-    #         # Finally, remake header to reflect new values
-    #         self.makeHeader()
-
-    # For part 2 of 3-way handshake. Receiver (server) formatting and sending SYN/ACK
     def makeSYNACKpkt(self,senderPort,receiverPort, outPacket):
         if outPacket.getSyn() == 1:
             # Set sport to senders port
@@ -131,22 +106,6 @@ class tcpPacket:
             # Finally, remake header to relfect new values
             self.makeHeader()
 
-    # # Final step of 3-way handshake. Sender formatting and sending back ACK 
-    # def makeACKpkt(self):
-    #     sport = self.getSport()
-    #     dport = self.getDport()
-    #     seqNum = self.getSeqnum()
-    #     ackNum = self.getAcknum()
-    #     self.setSport(dport)
-    #     self.setDport(sport)
-    #     self.setSeqnum(ackNum)
-    #     self.setAcknum(seqNum+1)
-    #     self.setSyn(0); self.setAck(1); self.setFin(0)
-    #     self.makeHeader()
-
-    #     # Adjust saved ack num
-    #     self.setSavedAcknum(self.getAcknum())
-
     # Final step of 3-way handshake. Sender formatting and sending back ACK 
     def makeACKpkt(self, outPacket):
         # + 1 for the SYN bit that was sent during SYN/ACK 
@@ -155,9 +114,20 @@ class tcpPacket:
         if self.getSeqnum() != outPacket.getAcknum():
             print("makeACKpkt error!")
         # If the incoming pkt has a SYN, then acknowledge it
-        elif outPacket.getSyn() == 1:
-            self.setAcknum(outPacket.getSeqnum()+1)
-            self.setSyn(0); self.setAck(1)
+        self.setAcknum(outPacket.getSeqnum()+1)
+        self.setSyn(0); self.setAck(1)
+        self.makeHeader()
+
+    # For when a FIN message is to be sent
+    def makeFINpkt(self, outPacket):
+        # + 1 for the FIN bit that is sent
+        self.setSeqnum(self.getSeqnum()+1)
+        # If the current seq num does not match the incoming pkts ack num then flag an error
+        if self.getSeqnum() != outPacket.getAcknum():
+            print("makeFINpkt error!")
+        else:
+            self.delPayload()
+            self.setFin(1); self.setAck(0); self.setSyn(0)
             self.makeHeader()
 
     # For adding a data payload to packet
@@ -168,15 +138,29 @@ class tcpPacket:
     def delPayload(self):
         self.header = self.header[0:17]
 
-    # For verification of sequence and acknowledgement numbers
+    # For verification  and ack of sequence and acknowledgement numbers
     def verifySeqAck(self, outPacket):   # input may not be neeeded (?)
-        if self.getSavedAcknum() != input.getSeqnum():
-            print("todo!")
+        if self.getAcknum() != outPacket.getSeqnum():       # Acknum is expected seqnum of next packet
+            print("verifySeqAck error!")
+            return False
+        else:
+            return True
 
     # For incrementing of sequence and ack nums during communication
-    def incrementNums(self):
-        print("seq: " + str(self.getSeqnum()))
-        print("ack: " + str(self.getAcknum()))
+    def incrementNums(self,payload,outPacket):
+        # If sending nothing and receiving data
+        if payload == None and outPacket.getPayload() != None:
+            self.setAcknum(self.getAcknum()+len(outPacket.getPayload()))
+            self.makeHeader()
+        # If sending data and receiving and ACK
+        elif payload != None and outPacket.getPayload() == None:
+            self.setSeqnum(self.getSeqnum()+len(payload))
+            self.makeHeader()
+        # If sending data and receiving data
+        elif payload != None and outPacket.getPayload() != None:
+            self.setSeqnum(self.getSeqnum()+len(payload))
+            self.setAcknum(self.getAcknum()+len(outPacket.getPayload()))
+            self.makeHeader()
 
     # For visual and debugging purposes
     def translateHeader(self):
