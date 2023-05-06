@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".DetailedActivity">
+
+    <LinearLayout
+        android:id="@+id/mainLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/word"
+            android:layout_gravity="center"
+            android:layout_marginTop="55dp"
+            android:layout_width="252dp"
+            android:layout_height="73dp"
+            android:text="Word"
+            android:textAlignment="center"
+            android:textColor="@color/purple_200"
+            android:textSize="32sp"
+            android:textIsSelectable="true"
+            app:layout_constraintBottom_toTopOf="@+id/definition"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/definition"
+            android:layout_gravity="center"
+            android:layout_marginTop="40dp"
+            android:layout_width="252dp"
+            android:layout_height="366dp"
+            android:text="Definition"
+            android:textIsSelectable="true"
+            android:textAlignment="center"
+            android:textColor="@color/white"
+            android:textSize="26sp"
+            app:layout_constraintVertical_bias="0.498" />
+
+        <EditText
+            android:id="@+id/defEdit"
+            android:enabled="false"
+            android:layout_width="252dp"
+            android:layout_height="366dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="-366dp"
+            android:textColor="@color/white"
+            app:layout_constraintVertical_bias="0.498" />
+
+        <EditText
+            android:id="@+id/wordEdit"
+            android:layout_width="252dp"
+            android:layout_height="71dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="-480dp"
+            android:enabled="false"
+            android:textColor="@color/white"
+            app:layout_constraintVertical_bias="0.498" />
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/btnLayout"
+            android:layout_marginTop="470dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            app:justifyContent="space_between"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/editButton"
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:text="Edit"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/delButton"
+                app:layout_constraintHorizontal_bias="0.607"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/definition"
+                app:layout_constraintVertical_bias="0.351" />
+
+            <Button
+                android:id="@+id/delButton"
+                android:layout_width="100dp"
+                android:layout_height="match_parent"
+                android:text="Delete" />
+
+        </com.google.android.flexbox.FlexboxLayout>
+
+    </LinearLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
