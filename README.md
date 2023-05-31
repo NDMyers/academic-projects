@@ -1,4 +1,4 @@
-A collection of noteworthy side projects I have made/contributed towards.
+A collection of noteworthy side and academic projects I have made/contributed towards.
 
 PYTHON:
   1. Recreation of TCP protocols Tahoe/Reno using UDP sockets with emulated packet loss and jitter.
